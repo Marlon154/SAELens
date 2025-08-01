@@ -14,6 +14,13 @@ from .jumprelu_sae import (
     JumpReLUTrainingSAE,
     JumpReLUTrainingSAEConfig,
 )
+from .matryoshka_sae import (
+    MatryoshkaSAE,
+    MatryoshkaSAEConfig,
+    MatryoshkaTrainingSAE,
+    MatryoshkaTrainingSAEConfig,
+)
+from .mp_sae import MPSAE, MPSAEConfig, MPTrainingSAE, MPTrainingSAEConfig
 from .sae import SAE, SAEConfig, TrainingSAE, TrainingSAEConfig
 from .standard_sae import (
     StandardSAE,
@@ -45,6 +52,14 @@ __all__ = [
     "JumpReLUSAEConfig",
     "JumpReLUTrainingSAE",
     "JumpReLUTrainingSAEConfig",
+    "MatryoshkaSAE",
+    "MatryoshkaSAEConfig",
+    "MatryoshkaTrainingSAE",
+    "MatryoshkaTrainingSAEConfig",
+    "MPSAE",
+    "MPSAEConfig",
+    "MPTrainingSAE",
+    "MPTrainingSAEConfig",
     "TopKSAE",
     "TopKSAEConfig",
     "TopKTrainingSAE",

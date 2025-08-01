@@ -17,6 +17,14 @@ from sae_lens.saes import (
     JumpReLUSAEConfig,
     JumpReLUTrainingSAE,
     JumpReLUTrainingSAEConfig,
+    MatryoshkaSAE,
+    MatryoshkaSAEConfig,
+    MatryoshkaTrainingSAE,
+    MatryoshkaTrainingSAEConfig,
+    MPSAE,
+    MPSAEConfig,
+    MPTrainingSAE,
+    MPTrainingSAEConfig,
     SAEConfig,
     StandardSAE,
     StandardSAEConfig,
@@ -77,6 +85,14 @@ __all__ = [
     "GatedSAEConfig",
     "GatedTrainingSAE",
     "GatedTrainingSAEConfig",
+    "MatryoshkaSAE",
+    "MatryoshkaSAEConfig",
+    "MatryoshkaTrainingSAE",
+    "MatryoshkaTrainingSAEConfig",
+    "MPSAE",
+    "MPSAEConfig",
+    "MPTrainingSAE",
+    "MPTrainingSAEConfig",
     "TopKSAE",
     "TopKSAEConfig",
     "TopKTrainingSAE",
@@ -103,3 +119,7 @@ register_sae_training_class("jumprelu", JumpReLUTrainingSAE, JumpReLUTrainingSAE
 register_sae_training_class(
     "batchtopk", BatchTopKTrainingSAE, BatchTopKTrainingSAEConfig
 )
+register_sae_class("matryoshka", MatryoshkaSAE, MatryoshkaSAEConfig)
+register_sae_training_class("matryoshka", MatryoshkaTrainingSAE, MatryoshkaTrainingSAEConfig)
+register_sae_class("mp", MPSAE, MPSAEConfig)
+register_sae_training_class("mp", MPTrainingSAE, MPTrainingSAEConfig)
