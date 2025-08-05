@@ -1,5 +1,5 @@
 # ruff: noqa: E402
-__version__ = "6.3.1"
+__version__ = "6.5.1"
 
 import logging
 
@@ -17,6 +17,8 @@ from sae_lens.saes import (
     JumpReLUSAEConfig,
     JumpReLUTrainingSAE,
     JumpReLUTrainingSAEConfig,
+    JumpReLUTranscoder,
+    JumpReLUTranscoderConfig,
     MatryoshkaSAE,
     MatryoshkaSAEConfig,
     MatryoshkaTrainingSAE,
@@ -26,6 +28,8 @@ from sae_lens.saes import (
     MPTrainingSAE,
     MPTrainingSAEConfig,
     SAEConfig,
+    SkipTranscoder,
+    SkipTranscoderConfig,
     StandardSAE,
     StandardSAEConfig,
     StandardTrainingSAE,
@@ -36,6 +40,8 @@ from sae_lens.saes import (
     TopKTrainingSAEConfig,
     TrainingSAE,
     TrainingSAEConfig,
+    Transcoder,
+    TranscoderConfig,
 )
 
 from .analysis.hooked_sae_transformer import HookedSAETransformer
@@ -105,6 +111,12 @@ __all__ = [
     "LoggingConfig",
     "BatchTopKTrainingSAE",
     "BatchTopKTrainingSAEConfig",
+    "Transcoder",
+    "TranscoderConfig",
+    "SkipTranscoder",
+    "SkipTranscoderConfig",
+    "JumpReLUTranscoder",
+    "JumpReLUTranscoderConfig",
 ]
 
 
@@ -119,6 +131,9 @@ register_sae_training_class("jumprelu", JumpReLUTrainingSAE, JumpReLUTrainingSAE
 register_sae_training_class(
     "batchtopk", BatchTopKTrainingSAE, BatchTopKTrainingSAEConfig
 )
+register_sae_class("transcoder", Transcoder, TranscoderConfig)
+register_sae_class("skip_transcoder", SkipTranscoder, SkipTranscoderConfig)
+register_sae_class("jumprelu_transcoder", JumpReLUTranscoder, JumpReLUTranscoderConfig)
 register_sae_class("matryoshka", MatryoshkaSAE, MatryoshkaSAEConfig)
 register_sae_training_class("matryoshka", MatryoshkaTrainingSAE, MatryoshkaTrainingSAEConfig)
 register_sae_class("mp", MPSAE, MPSAEConfig)
