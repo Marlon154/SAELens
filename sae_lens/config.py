@@ -82,6 +82,7 @@ class LoggingConfig:
     wandb_entity: str | None = None
     wandb_log_frequency: int = 10
     eval_every_n_wandb_logs: int = 100  # logs every 100 steps.
+    wandb_upload_weights: bool = True
 
     def log(
         self,
@@ -101,7 +102,8 @@ class LoggingConfig:
             type="model",
             metadata=dict(trainer.cfg.__dict__),
         )
-        model_artifact.add_file(str(weights_path))
+        if self.wandb_upload_weights:
+            model_artifact.add_file(str(weights_path))
         model_artifact.add_file(str(cfg_path))
         wandb.log_artifact(model_artifact, aliases=wandb_aliases)
 
