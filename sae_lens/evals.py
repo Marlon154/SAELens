@@ -459,14 +459,16 @@ def get_sparsity_and_variance_metrics(
             original_act = cache[hook_name]
 
         # normalise if necessary (necessary in training only, otherwise we should fold the scaling in)
-        original_act = activation_scaler.scale(original_act)
+        original_act_scaled = activation_scaler.scale(original_act)
 
         # send the (maybe normalised) activations into the SAE
-        sae_feature_activations = sae.encode(original_act.to(sae.device))
-        sae_out = sae.decode(sae_feature_activations).to(original_act.device)
+        sae_feature_activations = sae.encode(original_act_scaled.to(sae.device))
+        sae_out_scaled = sae.decode(sae_feature_activations).to(
+            original_act_scaled.device
+        )
         del cache
 
-        sae_out = activation_scaler.unscale(sae_out)
+        sae_out = activation_scaler.unscale(sae_out_scaled)
 
         flattened_sae_input = einops.rearrange(original_act, "b ctx d -> (b ctx) d")
         flattened_sae_feature_acts = einops.rearrange(
@@ -716,17 +718,9 @@ def get_recons_loss(
         **model_kwargs,
     )
 
-    def kl(original_logits: torch.Tensor, new_logits: torch.Tensor):
-        original_probs = torch.nn.functional.softmax(original_logits, dim=-1)
-        log_original_probs = torch.log(original_probs)
-        new_probs = torch.nn.functional.softmax(new_logits, dim=-1)
-        log_new_probs = torch.log(new_probs)
-        kl_div = original_probs * (log_original_probs - log_new_probs)
-        return kl_div.sum(dim=-1)
-
     if compute_kl:
-        recons_kl_div = kl(original_logits, recons_logits)
-        zero_abl_kl_div = kl(original_logits, zero_abl_logits)
+        recons_kl_div = _kl(original_logits, recons_logits)
+        zero_abl_kl_div = _kl(original_logits, zero_abl_logits)
         metrics["kl_div_with_sae"] = recons_kl_div
         metrics["kl_div_with_ablation"] = zero_abl_kl_div
 
@@ -736,6 +730,18 @@ def get_recons_loss(
         metrics["ce_loss_with_ablation"] = zero_abl_ce_loss
 
     return metrics
+
+
+def _kl(original_logits: torch.Tensor, new_logits: torch.Tensor):
+    # Computes the log-probabilities of the new logits (approximation).
+    log_probs_new = torch.nn.functional.log_softmax(new_logits, dim=-1)
+    # Computes the probabilities of the original logits (true distribution).
+    probs_orig = torch.nn.functional.softmax(original_logits, dim=-1)
+    # Compute the KL divergence. torch.nn.functional.kl_div expects the first argument to be the log
+    # probabilities of the approximation (new), and the second argument to be the true distribution
+    # (original) as probabilities. This computes KL(original || new).
+    kl = torch.nn.functional.kl_div(log_probs_new, probs_orig, reduction="none")
+    return kl.sum(dim=-1)
 
 
 def all_loadable_saes() -> list[tuple[str, str, float, float]]:
@@ -776,6 +782,7 @@ def multiple_evals(
     n_eval_sparsity_variance_batches: int,
     eval_batch_size_prompts: int = 8,
     datasets: list[str] = ["Skylion007/openwebtext", "lighteval/MATH"],
+    dataset_trust_remote_code: bool = False,
     ctx_lens: list[int] = [128],
     output_dir: str = "eval_results",
     verbose: bool = False,
@@ -822,7 +829,11 @@ def multiple_evals(
         for ctx_len in ctx_lens:
             for dataset in datasets:
                 activation_store = ActivationsStore.from_sae(
-                    current_model, sae, context_size=ctx_len, dataset=dataset
+                    current_model,
+                    sae,
+                    context_size=ctx_len,
+                    dataset=dataset,
+                    dataset_trust_remote_code=dataset_trust_remote_code,
                 )
                 activation_store.shuffle_input_dataset(seed=42)
 
@@ -882,6 +893,7 @@ def run_evaluations(args: argparse.Namespace) -> list[dict[str, Any]]:
         n_eval_sparsity_variance_batches=args.n_eval_sparsity_variance_batches,
         eval_batch_size_prompts=args.batch_size_prompts,
         datasets=args.datasets,
+        dataset_trust_remote_code=args.dataset_trust_remote_code,
         ctx_lens=args.ctx_lens,
         output_dir=args.output_dir,
         verbose=args.verbose,
@@ -1003,6 +1015,11 @@ def process_args(args: list[str]) -> argparse.Namespace:
         nargs="+",
         default=["Skylion007/openwebtext"],
         help="Datasets to evaluate on, such as 'Skylion007/openwebtext' or 'lighteval/MATH'.",
+    )
+    arg_parser.add_argument(
+        "--dataset_trust_remote_code",
+        action="store_true",
+        help="Allow execution of remote code when loading datasets for evaluation.",
     )
     arg_parser.add_argument(
         "--ctx_lens",

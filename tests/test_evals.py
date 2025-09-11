@@ -13,6 +13,7 @@ from transformer_lens import HookedTransformer
 from sae_lens.config import LanguageModelSAERunnerConfig
 from sae_lens.evals import (
     EvalConfig,
+    _kl,
     all_loadable_saes,
     get_downstream_reconstruction_metrics,
     get_eval_everything_config,
@@ -297,6 +298,7 @@ def mock_args():
     args.datasets = ["test_dataset"]
     args.ctx_lens = [64]
     args.output_dir = "test_output"
+    args.dataset_trust_remote_code = False
     args.verbose = False
     return args
 
@@ -329,6 +331,7 @@ def test_run_evaluations(
         ctx_lens=mock_args.ctx_lens,
         output_dir=mock_args.output_dir,
         verbose=mock_args.verbose,
+        dataset_trust_remote_code=mock_args.dataset_trust_remote_code,
     )
     assert result == [{"test": "result"}]
 
@@ -544,9 +547,11 @@ def test_get_saes_from_regex_multiple_matches(mock_all_loadable_saes: MagicMock)
     assert result == expected
 
 
+@pytest.mark.parametrize("scaling_factor", [None, 3.0])
 def test_get_sparsity_and_variance_metrics_identity_sae_perfect_reconstruction(
     model: HookedTransformer,
     example_dataset: Dataset,
+    scaling_factor: float | None,
 ):
     """Test that an identity SAE (d_in = d_sae, W_enc = W_dec = Identity, zero biases) gets perfect variance explained."""
     # Create a special configuration for an identity SAE
@@ -580,7 +585,7 @@ def test_get_sparsity_and_variance_metrics_identity_sae_perfect_reconstruction(
         sae=identity_sae,
         model=model,
         activation_store=activation_store,
-        activation_scaler=ActivationScaler(),
+        activation_scaler=ActivationScaler(scaling_factor),
         n_batches=3,
         compute_l2_norms=True,
         compute_sparsity_metrics=True,
@@ -663,3 +668,20 @@ def test_run_evals_cli(tmp_path: Path):
         assert (
             eval_results[0]["metrics"]["model_performance_preservation"][metric] > 0.1
         )
+
+
+def _original_kl(original_logits: torch.Tensor, new_logits: torch.Tensor):
+    original_probs = torch.nn.functional.softmax(original_logits, dim=-1)
+    log_original_probs = torch.log(original_probs)
+    new_probs = torch.nn.functional.softmax(new_logits, dim=-1)
+    log_new_probs = torch.log(new_probs)
+    kl_div = original_probs * (log_original_probs - log_new_probs)
+    return kl_div.sum(dim=-1)
+
+
+def test_kl_matches_old_implementation():
+    test_original_logits = torch.randn(2, 10, 30)
+    test_new_logits = torch.randn(2, 10, 30)
+    assert _original_kl(test_original_logits, test_new_logits) == pytest.approx(
+        _kl(test_original_logits, test_new_logits)
+    )

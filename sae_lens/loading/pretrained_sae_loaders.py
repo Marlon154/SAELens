@@ -1,11 +1,14 @@
 import json
 import re
+import warnings
 from pathlib import Path
 from typing import Any, Protocol
 
 import numpy as np
+import requests
 import torch
-from huggingface_hub import hf_hub_download
+import yaml
+from huggingface_hub import hf_hub_download, hf_hub_url
 from huggingface_hub.utils import EntryNotFoundError
 from packaging.version import Version
 from safetensors import safe_open
@@ -1000,10 +1003,14 @@ def get_sparsify_config_from_disk(
         layer = int(match.group(1))
         hook_name = f"blocks.{layer}.hook_resid_post"
 
+    d_sae = old_cfg_dict.get("num_latents")
+    if d_sae is None:
+        d_sae = old_cfg_dict["d_in"] * old_cfg_dict["expansion_factor"]
+
     cfg_dict: dict[str, Any] = {
         "architecture": "standard",
         "d_in": old_cfg_dict["d_in"],
-        "d_sae": old_cfg_dict["d_in"] * old_cfg_dict["expansion_factor"],
+        "d_sae": d_sae,
         "dtype": "bfloat16",
         "device": device or "cpu",
         "model_name": config_dict.get("model", path.parts[-2]),
@@ -1177,6 +1184,7 @@ def get_gemma_2_transcoder_config_from_hf(
         "prepend_bos": True,
         "dataset_path": "monology/pile-uncopyrighted",
         "context_size": 1024,
+        "apply_b_dec_to_input": False,
         **(cfg_overrides or {}),
     }
 
@@ -1231,6 +1239,236 @@ def gemma_2_transcoder_huggingface_loader(
     return cfg_dict, state_dict, None
 
 
+def get_mwhanna_transcoder_config_from_hf(
+    repo_id: str,
+    folder_name: str,
+    device: str | None = None,
+    force_download: bool = False,  # noqa: ARG001
+    cfg_overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Get config for mwhanna transcoders"""
+
+    # Extract layer from folder name
+    layer = int(folder_name.replace(".safetensors", "").split("_")[-1])
+
+    try:
+        # mwhanna transcoders sometimes have a typo in the config file name, so check for both
+        wandb_config_path = hf_hub_download(
+            repo_id, "wandb-config.yaml", force_download=force_download
+        )
+    except EntryNotFoundError:
+        wandb_config_path = hf_hub_download(
+            repo_id, "wanb-config.yaml", force_download=force_download
+        )
+    try:
+        base_config_path = hf_hub_download(
+            repo_id, "config.yaml", force_download=force_download
+        )
+        with open(base_config_path) as f:
+            base_cfg_info: dict[str, Any] = yaml.safe_load(f)
+    except EntryNotFoundError:
+        # the 14b transcoders don't have a config file for some reason, so just pull the model name from the repo_id
+        qwen_3_size_match = re.search(r"qwen3-(\d+(?:\.\d+)?)b", repo_id)
+        if not qwen_3_size_match:
+            raise ValueError(f"Could not extract Qwen3 size from repo_id: {repo_id}")
+        qwen_3_size = qwen_3_size_match.group(1)
+        base_cfg_info = {
+            "model_name": f"Qwen/Qwen3-{qwen_3_size}B",
+        }
+
+    with open(wandb_config_path) as f:
+        wandb_cfg_info: dict[str, Any] = yaml.safe_load(f)
+
+    return {
+        "architecture": "transcoder",
+        "d_in": wandb_cfg_info["d_model"]["value"],
+        "d_out": wandb_cfg_info["d_model"]["value"],
+        "d_sae": wandb_cfg_info["d_feature"]["value"],
+        "dtype": "float32",
+        "device": device if device is not None else "cpu",
+        "activation_fn": "relu",
+        "normalize_activations": "none",
+        "model_name": base_cfg_info["model_name"],
+        "hook_name": f"blocks.{layer}.mlp.hook_in",
+        "hook_name_out": f"blocks.{layer}.hook_mlp_out",
+        "dataset_path": "monology/pile-uncopyrighted",
+        "context_size": wandb_cfg_info["batch_size"]["value"],
+        "apply_b_dec_to_input": False,
+        "model_from_pretrained_kwargs": {"fold_ln": False},
+        **(cfg_overrides or {}),
+    }
+
+
+def mwhanna_transcoder_huggingface_loader(
+    repo_id: str,
+    folder_name: str,
+    device: str = "cpu",
+    force_download: bool = False,
+    cfg_overrides: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], dict[str, torch.Tensor], torch.Tensor | None]:
+    """Load mwhanna transcoders from HuggingFace"""
+    cfg_dict = get_mwhanna_transcoder_config_from_hf(
+        repo_id,
+        folder_name,
+        device,
+        force_download,
+        cfg_overrides,
+    )
+
+    # Download the safetensors file
+    revision = cfg_overrides.get("revision", None) if cfg_overrides else None
+
+    file_path = hf_hub_download(
+        repo_id=repo_id,
+        filename=folder_name,
+        force_download=force_download,
+        revision=revision,
+    )
+
+    # Load weights from safetensors
+    state_dict = load_file(file_path, device=device)
+    state_dict["W_enc"] = state_dict["W_enc"].T
+
+    return cfg_dict, state_dict, None
+
+
+def get_safetensors_tensor_shapes(url: str) -> dict[str, list[int]]:
+    """
+    Get tensor shapes from a safetensors file using HTTP range requests
+    without downloading the entire file.
+
+    Args:
+        url: Direct URL to the safetensors file
+
+    Returns:
+        Dictionary mapping tensor names to their shapes
+    """
+    # Check if server supports range requests
+    response = requests.head(url, timeout=10)
+    response.raise_for_status()
+
+    accept_ranges = response.headers.get("Accept-Ranges", "")
+    if "bytes" not in accept_ranges:
+        raise ValueError("Server does not support range requests")
+
+    # Fetch first 8 bytes to get metadata size
+    headers = {"Range": "bytes=0-7"}
+    response = requests.get(url, headers=headers, timeout=10)
+    if response.status_code != 206:
+        raise ValueError("Failed to fetch initial bytes for metadata size")
+
+    meta_size = int.from_bytes(response.content, byteorder="little")
+
+    # Fetch the metadata header
+    headers = {"Range": f"bytes=8-{8 + meta_size - 1}"}
+    response = requests.get(url, headers=headers, timeout=10)
+    if response.status_code != 206:
+        raise ValueError("Failed to fetch metadata header")
+
+    metadata_json = response.content.decode("utf-8").strip()
+    metadata = json.loads(metadata_json)
+
+    # Extract tensor shapes, excluding the __metadata__ key
+    return {
+        name: info["shape"] for name, info in metadata.items() if name != "__metadata__"
+    }
+
+
+def mntss_clt_layer_huggingface_loader(
+    repo_id: str,
+    folder_name: str,
+    device: str = "cpu",
+    force_download: bool = False,  # noqa: ARG001
+    cfg_overrides: dict[str, Any] | None = None,
+) -> tuple[dict[str, Any], dict[str, torch.Tensor], torch.Tensor | None]:
+    """
+    Load a MNTSS CLT layer as a single layer transcoder.
+    The assumption is that the `folder_name` is the layer to load as an int
+    """
+
+    # warn that this sums the decoders together, so should only be used to find feature activations, not for reconstruction
+    warnings.warn(
+        "This loads the CLT layer as a single layer transcoder by summing all decoders together. This should only be used to find feature activations, not for reconstruction",
+        UserWarning,
+    )
+
+    cfg_dict = get_mntss_clt_layer_config_from_hf(
+        repo_id,
+        folder_name,
+        device,
+        force_download,
+        cfg_overrides,
+    )
+
+    # We need to actually load the weights, since the config is missing most information
+    encoder_path = hf_hub_download(
+        repo_id,
+        f"W_enc_{folder_name}.safetensors",
+        force_download=force_download,
+    )
+    decoder_path = hf_hub_download(
+        repo_id,
+        f"W_dec_{folder_name}.safetensors",
+        force_download=force_download,
+    )
+
+    encoder_state_dict = load_file(encoder_path, device=device)
+    decoder_state_dict = load_file(decoder_path, device=device)
+
+    with torch.no_grad():
+        state_dict = {
+            "W_enc": encoder_state_dict[f"W_enc_{folder_name}"].T,  # type: ignore
+            "b_enc": encoder_state_dict[f"b_enc_{folder_name}"],  # type: ignore
+            "b_dec": encoder_state_dict[f"b_dec_{folder_name}"],  # type: ignore
+            "W_dec": decoder_state_dict[f"W_dec_{folder_name}"].sum(dim=1),  # type: ignore
+        }
+
+    return cfg_dict, state_dict, None
+
+
+def get_mntss_clt_layer_config_from_hf(
+    repo_id: str,
+    folder_name: str,
+    device: str,
+    force_download: bool = False,  # noqa: ARG001
+    cfg_overrides: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Load a MNTSS CLT layer as a single layer transcoder.
+    The assumption is that the `folder_name` is the layer to load as an int
+    """
+    base_config_path = hf_hub_download(
+        repo_id, "config.yaml", force_download=force_download
+    )
+    with open(base_config_path) as f:
+        cfg_info: dict[str, Any] = yaml.safe_load(f)
+
+    # Get tensor shapes without downloading full files using HTTP range requests
+    encoder_url = hf_hub_url(repo_id, f"W_enc_{folder_name}.safetensors")
+    encoder_shapes = get_safetensors_tensor_shapes(encoder_url)
+
+    # Extract shapes for the required tensors
+    b_dec_shape = encoder_shapes[f"b_dec_{folder_name}"]
+    b_enc_shape = encoder_shapes[f"b_enc_{folder_name}"]
+
+    return {
+        "architecture": "transcoder",
+        "d_in": b_dec_shape[0],
+        "d_out": b_dec_shape[0],
+        "d_sae": b_enc_shape[0],
+        "dtype": "float32",
+        "device": device if device is not None else "cpu",
+        "activation_fn": "relu",
+        "normalize_activations": "none",
+        "model_name": cfg_info["model_name"],
+        "hook_name": f"blocks.{folder_name}.{cfg_info['feature_input_hook']}",
+        "hook_name_out": f"blocks.{folder_name}.{cfg_info['feature_output_hook']}",
+        "apply_b_dec_to_input": False,
+        "model_from_pretrained_kwargs": {"fold_ln": False},
+        **(cfg_overrides or {}),
+    }
+
+
 NAMED_PRETRAINED_SAE_LOADERS: dict[str, PretrainedSaeHuggingfaceLoader] = {
     "sae_lens": sae_lens_huggingface_loader,
     "connor_rob_hook_z": connor_rob_hook_z_huggingface_loader,
@@ -1241,6 +1479,8 @@ NAMED_PRETRAINED_SAE_LOADERS: dict[str, PretrainedSaeHuggingfaceLoader] = {
     "deepseek_r1": deepseek_r1_sae_huggingface_loader,
     "sparsify": sparsify_huggingface_loader,
     "gemma_2_transcoder": gemma_2_transcoder_huggingface_loader,
+    "mwhanna_transcoder": mwhanna_transcoder_huggingface_loader,
+    "mntss_clt_layer_transcoder": mntss_clt_layer_huggingface_loader,
 }
 
 
@@ -1254,4 +1494,6 @@ NAMED_PRETRAINED_SAE_CONFIG_GETTERS: dict[str, PretrainedSaeConfigHuggingfaceLoa
     "deepseek_r1": get_deepseek_r1_config_from_hf,
     "sparsify": get_sparsify_config_from_hf,
     "gemma_2_transcoder": get_gemma_2_transcoder_config_from_hf,
+    "mwhanna_transcoder": get_mwhanna_transcoder_config_from_hf,
+    "mntss_clt_layer_transcoder": get_mntss_clt_layer_config_from_hf,
 }

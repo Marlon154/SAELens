@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 import torch
+import yaml
 from safetensors.torch import save_file
 from sparsify import SparseCoder, SparseCoderConfig
 
@@ -11,7 +12,10 @@ from sae_lens.loading.pretrained_sae_loaders import (
     get_gemma_2_transcoder_config_from_hf,
     get_llama_scope_config_from_hf,
     get_llama_scope_r1_distill_config_from_hf,
+    get_mntss_clt_layer_config_from_hf,
+    get_mwhanna_transcoder_config_from_hf,
     load_sae_config_from_huggingface,
+    mntss_clt_layer_huggingface_loader,
     read_sae_components_from_disk,
     sparsify_disk_loader,
     sparsify_huggingface_loader,
@@ -191,7 +195,7 @@ def test_get_gemma_2_transcoder_config_from_hf():
         device="cpu",
     )
 
-    expected_cfg = expected_cfg = {
+    expected_cfg = {
         "architecture": "jumprelu_transcoder",
         "d_in": 2304,
         "d_out": 2304,
@@ -208,6 +212,116 @@ def test_get_gemma_2_transcoder_config_from_hf():
         "prepend_bos": True,
         "dataset_path": "monology/pile-uncopyrighted",
         "context_size": 1024,
+        "apply_b_dec_to_input": False,
+    }
+
+    assert cfg == expected_cfg
+
+
+def test_get_mntss_clt_layer_config_from_hf():
+    cfg = get_mntss_clt_layer_config_from_hf(
+        repo_id="mntss/clt-gemma-2-2b-426k",
+        folder_name="0",
+        device="cpu",
+    )
+    expected_cfg = {
+        "architecture": "transcoder",
+        "d_in": 2304,
+        "d_out": 2304,
+        "d_sae": 16384,
+        "dtype": "float32",
+        "device": "cpu",
+        "activation_fn": "relu",
+        "normalize_activations": "none",
+        "model_name": "google/gemma-2-2b",
+        "hook_name": "blocks.0.hook_resid_mid",
+        "hook_name_out": "blocks.0.hook_mlp_out",
+        "apply_b_dec_to_input": False,
+        "model_from_pretrained_kwargs": {"fold_ln": False},
+    }
+
+    assert cfg == expected_cfg
+
+
+def test_get_mwhanna_transcoder_config_from_hf():
+    cfg = get_mwhanna_transcoder_config_from_hf(
+        repo_id="mwhanna/qwen3-4b-transcoders",
+        folder_name="layer_10.safetensors",
+        device="cpu",
+    )
+
+    expected_cfg = {
+        "architecture": "transcoder",
+        "d_in": 2560,
+        "d_out": 2560,
+        "d_sae": 163840,
+        "dtype": "float32",
+        "device": "cpu",
+        "activation_fn": "relu",
+        "normalize_activations": "none",
+        "model_name": "Qwen/Qwen3-4B",
+        "hook_name": "blocks.10.mlp.hook_in",
+        "hook_name_out": "blocks.10.hook_mlp_out",
+        "dataset_path": "monology/pile-uncopyrighted",
+        "context_size": 8192,
+        "model_from_pretrained_kwargs": {"fold_ln": False},
+        "apply_b_dec_to_input": False,
+    }
+
+    assert cfg == expected_cfg
+
+
+def test_get_mwhanna_transcoder_config_8b_from_hf():
+    cfg = get_mwhanna_transcoder_config_from_hf(
+        repo_id="mwhanna/qwen3-8b-transcoders",
+        folder_name="layer_10.safetensors",
+        device="cpu",
+    )
+
+    expected_cfg = {
+        "architecture": "transcoder",
+        "d_in": 4096,
+        "d_out": 4096,
+        "d_sae": 163840,
+        "dtype": "float32",
+        "device": "cpu",
+        "activation_fn": "relu",
+        "normalize_activations": "none",
+        "model_name": "Qwen/Qwen3-8B",
+        "hook_name": "blocks.10.mlp.hook_in",
+        "hook_name_out": "blocks.10.hook_mlp_out",
+        "dataset_path": "monology/pile-uncopyrighted",
+        "context_size": 8192,
+        "model_from_pretrained_kwargs": {"fold_ln": False},
+        "apply_b_dec_to_input": False,
+    }
+
+    assert cfg == expected_cfg
+
+
+def test_get_mwhanna_transcoder_config_14b_from_hf():
+    cfg = get_mwhanna_transcoder_config_from_hf(
+        repo_id="mwhanna/qwen3-14b-transcoders",
+        folder_name="layer_10.safetensors",
+        device="cpu",
+    )
+
+    expected_cfg = {
+        "architecture": "transcoder",
+        "d_in": 5120,
+        "d_out": 5120,
+        "d_sae": 163840,
+        "dtype": "float32",
+        "device": "cpu",
+        "activation_fn": "relu",
+        "normalize_activations": "none",
+        "model_name": "Qwen/Qwen3-14B",
+        "hook_name": "blocks.10.mlp.hook_in",
+        "hook_name_out": "blocks.10.hook_mlp_out",
+        "dataset_path": "monology/pile-uncopyrighted",
+        "context_size": 8192,
+        "model_from_pretrained_kwargs": {"fold_ln": False},
+        "apply_b_dec_to_input": False,
     }
 
     assert cfg == expected_cfg
@@ -227,7 +341,7 @@ def test_load_sae_config_from_huggingface_gemma_2_transcoder():
         "dtype": "float32",
         "device": "cpu",
         "normalize_activations": "none",
-        "apply_b_dec_to_input": True,
+        "apply_b_dec_to_input": False,
         "reshape_activations": "none",
         "metadata": {
             "model_name": "gemma-2-2b",
@@ -242,6 +356,39 @@ def test_load_sae_config_from_huggingface_gemma_2_transcoder():
             "sae_lens_training_version": None,
         },
         "architecture": "jumprelu_transcoder",
+    }
+
+    assert cfg == expected_cfg
+
+
+def test_load_sae_config_from_huggingface_mwhanna_transcoder():
+    cfg = load_sae_config_from_huggingface(
+        release="mwhanna-qwen3-4b-transcoders",
+        sae_id="layer_10",
+        device="cpu",
+    )
+
+    expected_cfg = {
+        "d_in": 2560,
+        "d_out": 2560,
+        "d_sae": 163840,
+        "dtype": "float32",
+        "device": "cpu",
+        "normalize_activations": "none",
+        "apply_b_dec_to_input": False,
+        "reshape_activations": "none",
+        "metadata": {
+            "model_name": "Qwen/Qwen3-4B",
+            "hook_name": "blocks.10.mlp.hook_in",
+            "hook_name_out": "blocks.10.hook_mlp_out",
+            "dataset_path": "monology/pile-uncopyrighted",
+            "context_size": 8192,
+            "model_from_pretrained_kwargs": {"fold_ln": False},
+            "neuronpedia_id": "qwen3-4b/10-transcoder-hp",
+            "prepend_bos": True,
+            "sae_lens_training_version": None,
+        },
+        "architecture": "transcoder",
     }
 
     assert cfg == expected_cfg
@@ -375,12 +522,13 @@ def test_get_llama_scope_r1_distill_config_with_overrides():
 
 
 def test_sparsify_huggingface_loader():
-    sparsify_sae = SparseCoder.load_from_hub(
-        "EleutherAI/sae-llama-3-8b-32x", hookpoint="layers.10"
-    )
+    repo = "EleutherAI/sae-pythia-70m-32k"
+    hookpoint = "layers.1"
+    # Need to hackily load the SAE in float32 since sparsify doesn't handle dtypes correctly
+    sparsify_sae = SparseCoder.load_from_hub(repo, device="cpu", hookpoint=hookpoint)
 
     cfg_dict, state_dict, _ = sparsify_huggingface_loader(
-        "EleutherAI/sae-llama-3-8b-32x", folder_name="layers.10"
+        "EleutherAI/sae-pythia-70m-32k", folder_name="layers.1"
     )
 
     assert cfg_dict["d_in"] == sparsify_sae.d_in
@@ -429,6 +577,45 @@ def test_sparsify_disk_loader(tmp_path: Path):
     assert sparsify_sae.W_dec is not None
     torch.testing.assert_close(state_dict["W_dec"], sparsify_sae.W_dec.detach().T)
     torch.testing.assert_close(state_dict["b_dec"], sparsify_sae.b_dec.data)
+
+
+@pytest.mark.skip(
+    reason="This takes too long since the files are large. Also redundant-ish with the test below."
+)
+def test_dictionary_learning_sae_huggingface_loader_1_andy():
+    cfg_dict, state_dict, _ = dictionary_learning_sae_huggingface_loader_1(
+        "andyrdt/saes-llama-3.1-8b-instruct",
+        "resid_post_layer_3/trainer_1",
+        device="cpu",
+        force_download=False,
+        cfg_overrides=None,
+    )
+    assert state_dict.keys() == {"W_enc", "W_dec", "b_dec", "b_enc"}
+    assert cfg_dict == {
+        "architecture": "standard",
+        "d_in": 4096,
+        "d_sae": 131072,
+        "dtype": "float32",
+        "device": "cpu",
+        "model_name": "Llama-3.1-8B-Instruct",
+        "hook_name": "blocks.3.hook_resid_post",
+        "hook_head_index": None,
+        "activation_fn": "relu",
+        "activation_fn_kwargs": {},
+        "apply_b_dec_to_input": True,
+        "finetuning_scaling_factor": False,
+        "sae_lens_training_version": None,
+        "prepend_bos": True,
+        "dataset_path": "monology/pile-uncopyrighted",
+        "context_size": 1024,
+        "normalize_activations": "none",
+        "neuronpedia_id": None,
+        "dataset_trust_remote_code": True,
+    }
+    assert state_dict["W_enc"].shape == (4096, 131072)
+    assert state_dict["W_dec"].shape == (131072, 4096)
+    assert state_dict["b_dec"].shape == (4096,)
+    assert state_dict["b_enc"].shape == (131072,)
 
 
 def test_dictionary_learning_sae_huggingface_loader_1():
@@ -666,3 +853,146 @@ def test_read_sae_components_from_disk_with_ones_scaling_factor(tmp_path: Path):
     torch.testing.assert_close(loaded_state_dict["W_dec"], W_dec)
     torch.testing.assert_close(loaded_state_dict["b_enc"], b_enc)
     torch.testing.assert_close(loaded_state_dict["b_dec"], b_dec)
+
+
+def test_get_mntss_clt_layer_huggingface_loader(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Test the MNTSS CLT layer loader with mocked files."""
+    # Test parameters
+    repo_id = "test/mntss-clt-repo"
+    folder_name = "5"  # layer number
+    device = "cpu"
+
+    # Create test dimensions
+    d_in = 128
+    d_sae = 512
+
+    # Create fake config.yaml
+    config_data = {
+        "model_name": "test-model",
+        "feature_input_hook": "mlp.hook_in",
+        "feature_output_hook": "hook_mlp_out",
+    }
+    config_path = tmp_path / "config.yaml"
+    with open(config_path, "w") as f:
+        yaml.dump(config_data, f)
+
+    # Create the actual tensor data that will be inside the nested structure
+    W_enc_tensor = torch.randn(d_sae, d_in)  # This will be transposed
+    b_enc_tensor = torch.randn(d_sae)
+    b_dec_tensor = torch.randn(d_in)
+    W_dec_tensor = torch.randn(d_in, 10)  # Will be summed to (d_in,)
+
+    # Create fake encoder file with placeholder tensors (we'll mock load_file)
+    encoder_tensors = {
+        "placeholder": torch.tensor(0.0),
+    }
+    encoder_path = tmp_path / f"W_enc_{folder_name}.safetensors"
+    save_file(encoder_tensors, encoder_path)
+
+    # Create fake decoder file with placeholder tensors
+    decoder_tensors = {
+        "placeholder": torch.tensor(0.0),
+    }
+    decoder_path = tmp_path / f"W_dec_{folder_name}.safetensors"
+    save_file(decoder_tensors, decoder_path)
+
+    # Mock hf_hub_download to return our temporary files
+    def mock_hf_hub_download(
+        repo_id_arg: str,  # noqa: ARG001
+        filename: str,
+        force_download: bool = False,  # noqa: ARG001
+    ) -> str:
+        if filename == "config.yaml":
+            return str(config_path)
+        if filename == f"W_enc_{folder_name}.safetensors":
+            return str(encoder_path)
+        if filename == f"W_dec_{folder_name}.safetensors":
+            return str(decoder_path)
+        raise ValueError(f"Unexpected filename: {filename}")
+
+    # Mock load_file to return the expected nested structure
+    def mock_load_file(file_path: str, device: str = "cpu") -> dict[str, torch.Tensor]:  # noqa: ARG001
+        if f"W_enc_{folder_name}.safetensors" in file_path:
+            return {
+                f"W_enc_{folder_name}": W_enc_tensor,
+                f"b_enc_{folder_name}": b_enc_tensor,
+                f"b_dec_{folder_name}": b_dec_tensor,
+            }
+        if f"W_dec_{folder_name}.safetensors" in file_path:
+            return {f"W_dec_{folder_name}": W_dec_tensor}
+        raise ValueError(f"Unexpected file path: {file_path}")
+
+    # Mock hf_hub_url to return a fake URL
+    def mock_hf_hub_url(repo_id_arg: str, filename: str) -> str:  # noqa: ARG001
+        return f"https://huggingface.co/{repo_id_arg}/resolve/main/{filename}"
+
+    # Mock get_safetensors_tensor_shapes to return expected tensor shapes
+    def mock_get_safetensors_tensor_shapes(url: str) -> dict[str, list[int]]:  # noqa: ARG001
+        return {
+            f"b_dec_{folder_name}": [d_in],
+            f"b_enc_{folder_name}": [d_sae],
+            f"W_enc_{folder_name}": [d_sae, d_in],
+        }
+
+    # Apply the mocks
+    monkeypatch.setattr(
+        "sae_lens.loading.pretrained_sae_loaders.hf_hub_download", mock_hf_hub_download
+    )
+    monkeypatch.setattr(
+        "sae_lens.loading.pretrained_sae_loaders.load_file", mock_load_file
+    )
+    monkeypatch.setattr(
+        "sae_lens.loading.pretrained_sae_loaders.hf_hub_url", mock_hf_hub_url
+    )
+    monkeypatch.setattr(
+        "sae_lens.loading.pretrained_sae_loaders.get_safetensors_tensor_shapes",
+        mock_get_safetensors_tensor_shapes,
+    )
+
+    # Call the function
+    cfg_dict, state_dict, log_sparsity = mntss_clt_layer_huggingface_loader(
+        repo_id=repo_id,
+        folder_name=folder_name,
+        device=device,
+        force_download=False,
+        cfg_overrides=None,
+    )
+
+    # Verify the config
+    expected_cfg = {
+        "architecture": "transcoder",
+        "d_in": d_in,
+        "d_out": d_in,
+        "d_sae": d_sae,
+        "dtype": "float32",
+        "device": device,
+        "activation_fn": "relu",
+        "normalize_activations": "none",
+        "model_name": "test-model",
+        "hook_name": f"blocks.{folder_name}.mlp.hook_in",
+        "hook_name_out": f"blocks.{folder_name}.hook_mlp_out",
+        "apply_b_dec_to_input": False,
+        "model_from_pretrained_kwargs": {"fold_ln": False},
+    }
+
+    assert cfg_dict == expected_cfg
+
+    # Verify the state dict structure
+    assert set(state_dict.keys()) == {"W_enc", "b_enc", "b_dec", "W_dec"}
+
+    # Verify tensor shapes
+    assert state_dict["W_enc"].shape == (d_in, d_sae)  # Transposed from original
+    assert state_dict["b_enc"].shape == (d_sae,)
+    assert state_dict["b_dec"].shape == (d_in,)
+    assert state_dict["W_dec"].shape == (d_in,)  # Summed from (d_in, 10)
+
+    # Verify log_sparsity is None
+    assert log_sparsity is None
+
+    # Verify the tensors match expected transformations
+    torch.testing.assert_close(state_dict["W_enc"], W_enc_tensor.T)
+    torch.testing.assert_close(state_dict["b_enc"], b_enc_tensor)
+    torch.testing.assert_close(state_dict["b_dec"], b_dec_tensor)
+    torch.testing.assert_close(state_dict["W_dec"], W_dec_tensor.sum(dim=1))

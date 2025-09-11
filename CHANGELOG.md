@@ -1,5 +1,272 @@
 # CHANGELOG
 
+## v6.12.1 (2025-09-10)
+
+### Fix
+
+* fix: andy&#39;s last name starts with a not r 😓 ([`3376126`](https://github.com/jbloomAus/SAELens/commit/337612674e5f370864bf41eb6f13a4bb2b7fb111))
+
+## v6.12.0 (2025-09-10)
+
+### Feature
+
+* feat: add misaligned persona SAEs (#548)
+
+* feat: add andyrdt llama/qwen SAEs
+
+* update np names
+
+* skip redundant/long test ([`4ec6d52`](https://github.com/jbloomAus/SAELens/commit/4ec6d52da6fdc8b45f6be69a4b5b35ca62caaf19))
+
+## v6.11.1 (2025-09-08)
+
+### Documentation
+
+* docs: removing unnecessary fields from sae-table generation (#542) ([`3432f00`](https://github.com/jbloomAus/SAELens/commit/3432f0059bc1d90119fe48f88e17ac07aea3a620))
+
+### Fix
+
+* fix: allow float for batchtopk k param (#547) ([`c332b6c`](https://github.com/jbloomAus/SAELens/commit/c332b6ca3b78a7df59886385210ce915db66c6a6))
+
+## v6.11.0 (2025-09-03)
+
+### Feature
+
+* feat: support Anthropic&#39;s JumpReLU training setup (#541)
+
+* feat: support Anthropic&#39;s JumpReLU training setup
+
+* Update sae_lens/saes/jumprelu_sae.py
+
+Co-authored-by: Copilot &lt;175728472+Copilot@users.noreply.github.com&gt;
+
+* improving tests
+
+* Update docs/training_saes.md
+
+Co-authored-by: Anthony Duong &lt;42191920+anthonyduong9@users.noreply.github.com&gt;
+
+* feedback from CR
+
+---------
+
+Co-authored-by: Copilot &lt;175728472+Copilot@users.noreply.github.com&gt;
+Co-authored-by: Anthony Duong &lt;42191920+anthonyduong9@users.noreply.github.com&gt; ([`3d81e2d`](https://github.com/jbloomAus/SAELens/commit/3d81e2d9290eca485fd6b1f83039432673e21037))
+
+## v6.10.0 (2025-09-01)
+
+### Feature
+
+* feat: add `output_path` option to LLM training runner (#536)
+
+* feat: adding an explit output_path param to llm runner
+
+* allow setting  for checkpoint paths
+
+* changes from CR ([`03cabd8`](https://github.com/jbloomAus/SAELens/commit/03cabd8ef1f7b21fe0cc1abc6783292e0ddf7b11))
+
+## v6.9.1 (2025-08-30)
+
+### Fix
+
+* fix: add config loader for mntss clt by layer (#535)
+
+* feat: add mntss clts to pretrained yaml
+
+* fix: make config loader for mntss CLTs
+
+* fix: pyright
+
+* changes from CR
+
+* bust hf cache
+
+* fixing linting
+
+---------
+
+Co-authored-by: David Chanin &lt;chanindav@gmail.com&gt; ([`c2a678f`](https://github.com/jbloomAus/SAELens/commit/c2a678f42c9255ae70879b7ae8367ca7f8d8e00f))
+
+## v6.9.0 (2025-08-29)
+
+### Feature
+
+* feat: add mntss clts to pretrained yaml (#534) ([`26f29f9`](https://github.com/jbloomAus/SAELens/commit/26f29f928fecabec10178e1926cd10df7e9fa95b))
+
+## v6.8.0 (2025-08-27)
+
+### Feature
+
+* feat: Migrate Neuronpedia usages to either the library or remove it (#528)
+
+* Remove automated_interpretability and all usages
+
+* fix: missed removing other autointerp package in pyproject.toml ([`571c81f`](https://github.com/jbloomAus/SAELens/commit/571c81f7ea050e44e9f85b1991e09139cc0344d6))
+
+## v6.7.0 (2025-08-27)
+
+### Feature
+
+* feat: Load CLTs from mntss as single-layer transcoders (#526)
+
+* load each layer of mntss CLTs as its own transcoder
+
+* rename mntss clt loader
+
+* fixing mntss loading
+
+* fixing linting ([`60c3848`](https://github.com/jbloomAus/SAELens/commit/60c3848675b527c76cba1ffd72b4abdc197cb20b))
+
+## v6.6.5 (2025-08-27)
+
+### Chore
+
+* chore: reduce disk usage in CI (#533)
+
+* chore: skip caching .venv to save disk space
+
+* try skipping hf cache
+
+* trying to just skip all caching
+
+* more debugging logging for disk space
+
+* more debugging logging for disk space
+
+* more debugging
+
+* less logging, more speed
+
+* reducing disk usage of some tests
+
+* breaking hf cache ([`a2b4cb1`](https://github.com/jbloomAus/SAELens/commit/a2b4cb1239c7086f4efe522678b4c866448b6dfc))
+
+### Documentation
+
+* docs: migration doc - note that non-essential config values are moved into cfg.metadata (#529) ([`52b5ac8`](https://github.com/jbloomAus/SAELens/commit/52b5ac8a6691a299447bd6eb371f0dfbe56c707d))
+
+### Fix
+
+* fix: Stable Kullback-Leibler in evals.py  (#532)
+
+* Update evals.py
+
+* chore: fmt
+
+* test that kl calculation matches original behavior
+
+---------
+
+Co-authored-by: David Chanin &lt;chanindav@gmail.com&gt; ([`72a40e8`](https://github.com/jbloomAus/SAELens/commit/72a40e8d0d914877c17a985037f5c7e934c897ce))
+
+## v6.6.4 (2025-08-20)
+
+### Fix
+
+* fix: move automated-interpretability to an optional dependency in sae-lens (#525)
+
+* move automated-interpretability to an optional dependency in sae-lens
+
+* moving automated-interpretability imports into functions that use them
+
+* adding automated-interpretability to dev deps for CI
+
+* adding helpful error message if user tries to run stuff that requires automated-interp
+
+* fixing tests ([`6b09859`](https://github.com/jbloomAus/SAELens/commit/6b0985974621e91517ad81eef3d2c63909f9c5c4))
+
+## v6.6.3 (2025-08-18)
+
+### Fix
+
+* fix: fixing mwhanna 14b transcoder loading (#523) ([`3a4b415`](https://github.com/jbloomAus/SAELens/commit/3a4b415bc7b9db0c1f205ac279094a63e8c8eb95))
+
+## v6.6.2 (2025-08-18)
+
+### Fix
+
+* fix: fixing mwhanna 8b qwen transcoder paths (#522)
+
+* fixing mwhanna 8b qwen transcoder paths
+
+* catch just the not found error in huggingface hub ([`256617a`](https://github.com/jbloomAus/SAELens/commit/256617a75070aab81cd3a6048131901e87760908))
+
+## v6.6.1 (2025-08-18)
+
+### Fix
+
+* fix: compare unscaled input with unscaled output in var explained (#521)
+
+* fix: compare unscaled input with unscaled output in var explained
+
+* move sparsify loading into a closure to avoid doubling memory usage ([`10d04ae`](https://github.com/jbloomAus/SAELens/commit/10d04ae41440d68001f76cfb6974294493fa762e))
+
+* fix: relaxing saelens deps (#519)
+
+* relaxing saelens deps
+
+* fixing types
+
+* fixing tests
+
+* fixing formatting
+
+* pin sparsify version in tests
+
+* hopefully fixing sparsify test
+
+* trying to fix sparsify test another way... ([`66f575a`](https://github.com/jbloomAus/SAELens/commit/66f575a063bd3202f1f89cd05122ff7759adaa8c))
+
+## v6.6.0 (2025-08-14)
+
+### Feature
+
+* feat: adding mwhanna qwen transcoders to pretrained list (#515)
+
+* adding mwhanna qwen transcoders to pretrained list
+
+* bust cache to hopefully fix disk space issue in CI
+
+* fix: update transformerlens version, add -lowl0 to pretrained_saes repo_id, add neuronpedia IDs
+
+* fix: test for neuronpedia id on qwen
+
+* adding a mlp.hook_in hook for mwhanna transcoders
+
+* updating model_from_pretrained_kwargs for mwhanna saes
+
+---------
+
+Co-authored-by: Johnny Lin &lt;hijohnnylin@gmail.com&gt; ([`6e1a04f`](https://github.com/jbloomAus/SAELens/commit/6e1a04fbf4d2eca6f885a33f2fa1649f6619283f))
+
+## v6.5.3 (2025-08-11)
+
+### Fix
+
+* fix: dont apply b_dec to Gemma Scope transcoder inputs (#516)
+
+* fix: dont apply b_dec to transcoder input
+
+* fixing tests
+
+* change from cr ([`57888fa`](https://github.com/jbloomAus/SAELens/commit/57888fa583f7916c20f4ea87379e7727ad27b72a))
+
+## v6.5.2 (2025-08-09)
+
+### Fix
+
+* fix: allow `sae_lens.evals` command to work with legacy datasets (#514)
+
+* Fix  command
+
+* fixing type issue
+
+* fixing test
+
+---------
+
+Co-authored-by: David Chanin &lt;chanindav@gmail.com&gt; ([`daeca02`](https://github.com/jbloomAus/SAELens/commit/daeca02fd5874c30de103016b4d8ec0e919d43e0))
+
 ## v6.5.1 (2025-08-03)
 
 ### Fix
