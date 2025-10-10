@@ -1,5 +1,115 @@
 # CHANGELOG
 
+## v6.13.1 (2025-10-08)
+
+### Chore
+
+* chore: report 5mb disk usage swings in tests (#563)
+
+* report 50mb disk usage swings in tests
+
+* switching to smaller datasets and having smaller threshold for printing disk usage ([`7ef8946`](https://github.com/jbloomAus/SAELens/commit/7ef89464501008fabdd1346c826fd0638215dbfa))
+
+* chore: track disk usage in tests and clean up some space (#562)
+
+* track disk usage in tests to figure out where disk is going
+
+* more logging
+
+* more reporting
+
+* using older method of outputting disk space in CI
+
+* output diff in disk space from tests
+
+* reducing disk usage
+
+* adding tmate debugging
+
+* tweaking caches ([`f3d587f`](https://github.com/jbloomAus/SAELens/commit/f3d587f21eceedf2d3987ccdb055e1bddc15d354))
+
+### Documentation
+
+* docs: simplifying jumprelu docs ([`1e556b1`](https://github.com/jbloomAus/SAELens/commit/1e556b102e502bd94dae29c50f3c5c6834772f09))
+
+* docs: adding tips in the docs for which SAE architectures to use (#556) ([`382010c`](https://github.com/jbloomAus/SAELens/commit/382010c53f95feefc9f5d239f1814d5fd4d5b8cc))
+
+* docs: adding docs for making custom SAE classes (#537) ([`be87864`](https://github.com/jbloomAus/SAELens/commit/be878649968892a5bd52aa2f05f433beb9e8ec61))
+
+### Fix
+
+* fix: Make prepend_bos=True work for disable_concat_sequences case (#559)
+
+* Make prepend_bos=True work for disable_concat_sequences case
+
+* fixing formatting
+
+* more tests and fixed linting
+
+---------
+
+Co-authored-by: David Chanin &lt;chanindav@gmail.com&gt; ([`28da94e`](https://github.com/jbloomAus/SAELens/commit/28da94efdb3d99fde05df575c677e62389899ac7))
+
+## v6.13.0 (2025-10-04)
+
+### Chore
+
+* chore: adding a test for folding scaling factor all architectures (#555) ([`795363b`](https://github.com/jbloomAus/SAELens/commit/795363b64dce401db6adc9f05fffd6dd83f47920))
+
+### Feature
+
+* feat: optional sparse-decoding for topK SAEs (#550)
+
+* Add kernel skeleton and remove redundant b_enc param from TopK class
+
+* Add option in topK to save SAE activations as a sparse tensor
+
+* Add sparse activation config flag &amp; update tests
+
+* Linting changes
+
+* Making sparse COO tensors compatible with HookedTransformer (WIP)
+
+* Changes to make sparse SAE intermediate implementation transparent to TransformerLens Hooks
+
+* Add formatting script (for future optimization)
+
+* Address PR review comments
+
+* allow multidim sparsity in topk saes
+
+* fix logging with sparse feature acts
+
+* switch TopK to use dense tensors by default in case users are extending / using this module
+
+* bust CI cache to hopefully get CI to not run out of disk...
+
+* disable autocase for sparse.mm
+
+* default TopK SAEs to disable sparse training until we can improve performance
+
+* updating docs for topk config
+
+---------
+
+Co-authored-by: David Chanin &lt;chanindav@gmail.com&gt; ([`3d61660`](https://github.com/jbloomAus/SAELens/commit/3d616600bf2a2956f5af246f970267af577bb8d2))
+
+## v6.12.3 (2025-09-26)
+
+### Fix
+
+* fix: properly convert old SAELens TopK SAEs on load (#554)
+
+* fix: properly convert old SAELens TopK SAEs on load
+
+* fixing other loading test ([`9e71055`](https://github.com/jbloomAus/SAELens/commit/9e71055b1e93405e657abd32792fd4a8ce5d84bc))
+
+## v6.12.2 (2025-09-26)
+
+### Fix
+
+* fix: typo in sae.py leading to misleading warning (#552) ([`52afbda`](https://github.com/jbloomAus/SAELens/commit/52afbdab2b7dbfad2c2e71d7546f0d67e18ae954))
+
 ## v6.12.1 (2025-09-10)
 
 ### Fix
