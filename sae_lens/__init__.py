@@ -23,6 +23,10 @@ from sae_lens.saes import (
     MatryoshkaSAEConfig,
     MatryoshkaTrainingSAE,
     MatryoshkaTrainingSAEConfig,
+    BMatryoshkaSAE,
+    BMatryoshkaSAEConfig,
+    BMatryoshkaTrainingSAE,
+    BMatryoshkaTrainingSAEConfig,
     MPSAE,
     MPSAEConfig,
     MPTrainingSAE,
@@ -95,6 +99,10 @@ __all__ = [
     "MatryoshkaSAEConfig",
     "MatryoshkaTrainingSAE",
     "MatryoshkaTrainingSAEConfig",
+    "BMatryoshkaSAE",
+    "BMatryoshkaSAEConfig",
+    "BMatryoshkaTrainingSAE",
+    "BMatryoshkaTrainingSAEConfig",
     "MPSAE",
     "MPSAEConfig",
     "MPTrainingSAE",
@@ -136,5 +144,7 @@ register_sae_class("skip_transcoder", SkipTranscoder, SkipTranscoderConfig)
 register_sae_class("jumprelu_transcoder", JumpReLUTranscoder, JumpReLUTranscoderConfig)
 register_sae_class("matryoshka", MatryoshkaSAE, MatryoshkaSAEConfig)
 register_sae_training_class("matryoshka", MatryoshkaTrainingSAE, MatryoshkaTrainingSAEConfig)
+register_sae_class("balanced_matryoshka", BMatryoshkaSAE, BMatryoshkaSAEConfig)
+register_sae_training_class("balanced_matryoshka", BMatryoshkaTrainingSAE, BMatryoshkaTrainingSAEConfig)
 register_sae_class("mp", MPSAE, MPSAEConfig)
 register_sae_training_class("mp", MPTrainingSAE, MPTrainingSAEConfig)

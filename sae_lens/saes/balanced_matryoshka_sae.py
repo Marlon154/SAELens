@@ -111,11 +111,18 @@ class BMatryoshkaTrainingSAEConfig(BatchTopKTrainingSAEConfig):
         return "balanced_matryoshka"
 
     @override
+    def to_dict(self) -> dict[str, Any]:
+        d = super().to_dict()
+        d['group_sizes'] = self.group_sizes
+        d['level_weights'] = self.level_weights
+        return d
+
+    @override
     def get_inference_config_class(self) -> type[SAEConfig]:
         return JumpReLUSAEConfig
 
 
-class MatryoshkaTrainingSAE(BatchTopKTrainingSAE):
+class BMatryoshkaTrainingSAE(BatchTopKTrainingSAE):
     """
     MatryoshkaTrainingSAE
     """

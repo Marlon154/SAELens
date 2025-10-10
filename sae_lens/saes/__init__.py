@@ -20,6 +20,14 @@ from .matryoshka_sae import (
     MatryoshkaTrainingSAE,
     MatryoshkaTrainingSAEConfig,
 )
+
+from .balanced_matryoshka_sae import (
+    BMatryoshkaSAE,
+    BMatryoshkaSAEConfig,
+    BMatryoshkaTrainingSAE,
+    BMatryoshkaTrainingSAEConfig,
+)
+
 from .mp_sae import MPSAE, MPSAEConfig, MPTrainingSAE, MPTrainingSAEConfig
 from .sae import SAE, SAEConfig, TrainingSAE, TrainingSAEConfig
 from .standard_sae import (
@@ -64,6 +72,10 @@ __all__ = [
     "MatryoshkaSAEConfig",
     "MatryoshkaTrainingSAE",
     "MatryoshkaTrainingSAEConfig",
+    "BMatryoshkaSAE",
+    "BMatryoshkaSAEConfig",
+    "BMatryoshkaTrainingSAE",
+    "BMatryoshkaTrainingSAEConfig",
     "MPSAE",
     "MPSAEConfig",
     "MPTrainingSAE",
