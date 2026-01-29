@@ -3,8 +3,6 @@
 from pathlib import Path
 from unittest.mock import MagicMock, Mock, patch
 
-import pytest
-
 from sae_lens.config import LoggingConfig
 
 
@@ -43,9 +41,7 @@ class TestLoggingConfigWeightsUpload:
         assert mock_wandb.Artifact.call_count == 2  # model + sparsity
 
         # Verify weights file was added to model artifact
-        model_artifact_calls = [
-            call for call in mock_artifact.add_file.call_args_list
-        ]
+        model_artifact_calls = [call for call in mock_artifact.add_file.call_args_list]
         # Should have 2 calls for model artifact (weights + cfg)
         # and 1 call for sparsity artifact
         assert len(model_artifact_calls) == 3
@@ -75,9 +71,7 @@ class TestLoggingConfigWeightsUpload:
         assert mock_wandb.Artifact.call_count == 2  # model + sparsity
 
         # Verify only cfg file was added to model artifact (not weights)
-        model_artifact_calls = [
-            call for call in mock_artifact.add_file.call_args_list
-        ]
+        model_artifact_calls = [call for call in mock_artifact.add_file.call_args_list]
         # Should have 1 call for model artifact (cfg only, no weights)
         # and 1 call for sparsity artifact
         assert len(model_artifact_calls) == 2
@@ -111,7 +105,5 @@ class TestLoggingConfigWeightsUpload:
         assert mock_wandb.log_artifact.call_count == 2
 
         # Verify the add_file calls
-        model_artifact_calls = [
-            call for call in mock_artifact.add_file.call_args_list
-        ]
+        model_artifact_calls = [call for call in mock_artifact.add_file.call_args_list]
         assert len(model_artifact_calls) == 2  # cfg + sparsity
