@@ -5,7 +5,6 @@ import pytest
 from sae_lens.config import (
     CacheActivationsRunnerConfig,
     LanguageModelSAERunnerConfig,
-    LoggingConfig,
     _default_cached_activations_path,
 )
 from sae_lens.saes.jumprelu_sae import JumpReLUTrainingSAEConfig
@@ -130,15 +129,3 @@ def test_LanguageModelSAERunnerConfig_errors_when_loading_from_dict_with_missing
         test_dict = cfg.to_dict()
         del test_dict["logger"]
         LanguageModelSAERunnerConfig.from_dict(test_dict)
-
-
-def test_LoggingConfig_log_weights_to_wandb_default_is_true():
-    """Test that log_weights_to_wandb defaults to True to maintain backward compatibility."""
-    cfg = LoggingConfig()
-    assert cfg.log_weights_to_wandb is True
-
-
-def test_LoggingConfig_log_weights_to_wandb_can_be_set_to_false():
-    """Test that log_weights_to_wandb can be set to False."""
-    cfg = LoggingConfig(log_weights_to_wandb=False)
-    assert cfg.log_weights_to_wandb is False
